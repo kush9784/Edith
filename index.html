@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html,body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
+<title>E.D.I.T.H.</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: mission console. Fixed HUD header with live telemetry ticker; grouped module rail on the left
+   (a tab strip on narrow screens); one view at a time on the right, built from bracketed readout cells. */
+:root{
+  --void:#040A14; --deck:#081326; --panel:#0B1830; --panel-2:#102240; --well:#060F1E;
+  --line:rgba(130,172,233,.13); --line-2:rgba(130,172,233,.28); --line-3:rgba(130,172,233,.5);
+  --ink:#E9F0FA; --ink-2:#A6B7CF; --ink-3:#6B809E;
+  --axtra:#306FC7; --axtra-hi:#86B0EC;   /* CP AXTRA blue: accent */
+  --gold:#F6C24A;                         /* CP AXTRA yellow: ESTIMATE */
+  --lotus:#43938F; --lotus-hi:#66BAB4;    /* Lotus green: DIRECT */
+  --makro:#DA3832; --makro-hi:#EF7570;    /* Makro red: RESTRICTED */
+  --f-display:"Chakra Petch","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --hdr:64px; --r:4px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--void);-webkit-text-size-adjust:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;min-height:100vh;
+  background-image:radial-gradient(1100px 700px at 100% -20%,rgba(48,111,199,.20),transparent 60%),radial-gradient(700px 600px at -20% 110%,rgba(67,147,143,.10),transparent 60%);background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--void)}
+.scan{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.5;
+  background:repeating-linear-gradient(0deg,rgba(130,172,233,.025) 0 1px,transparent 1px 3px),
+             linear-gradient(var(--line) 1px,transparent 1px) 0 0/56px 56px,
+             linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 60% 30%,#000 30%,transparent 85%);mask-image:radial-gradient(ellipse at 60% 30%,#000 30%,transparent 85%)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* HUD bracket frame — four corner brackets drawn as background layers */
+.hud{position:relative;background:
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 0 0/14px 2px no-repeat,
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 0 0/2px 14px no-repeat,
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 100% 0/14px 2px no-repeat,
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 100% 0/2px 14px no-repeat,
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 0 100%/14px 2px no-repeat,
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 0 100%/2px 14px no-repeat,
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 100% 100%/14px 2px no-repeat,
+  linear-gradient(var(--c,var(--axtra-hi)),var(--c,var(--axtra-hi))) 100% 100%/2px 14px no-repeat,
+  linear-gradient(180deg,rgba(16,34,64,.88),rgba(9,20,40,.88));
+  border:1px solid var(--line-2);border-radius:var(--r)}
+
+/* ---------- boot ---------- */
+.boot{position:fixed;inset:0;z-index:50;background:var(--void);display:grid;place-content:center;gap:22px;padding:24px;transition:opacity .45s ease,visibility .45s;cursor:pointer}
+.boot.gone{opacity:0;visibility:hidden}
+.boot-mark{font-family:var(--f-display);font-weight:700;font-size:clamp(44px,9vw,84px);letter-spacing:.32em;text-align:center;line-height:1;padding-left:.32em}
+.boot-mark b{color:var(--gold)}
+.boot-sub{font-family:var(--f-display);font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--axtra-hi);text-align:center}
+.boot-log{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-3);width:min(460px,86vw);min-height:150px;display:grid;align-content:start;gap:2px}
+.boot-log div{display:flex;gap:10px;white-space:nowrap;overflow:hidden}
+.boot-log .ok{color:var(--lotus-hi)} .boot-log .k{color:var(--ink-2)}
+.boot-bar{height:2px;background:var(--line);width:min(460px,86vw);overflow:hidden}
+.boot-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--axtra),var(--gold));transition:width .2s}
+.boot-skip{font-size:11px;letter-spacing:.2em;color:var(--ink-3);text-align:center;text-transform:uppercase}
+
+/* ---------- header ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(4,10,20,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line-2)}
+.top-in{height:var(--hdr);display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;text-decoration:none}
+.lens{width:36px;height:36px;flex:none;border-radius:50%;position:relative;border:1.5px solid var(--line-3);
+  background:radial-gradient(circle,var(--gold) 0 4px,transparent 5px),radial-gradient(circle,transparent 9px,rgba(48,111,199,.5) 10px,transparent 12px)}
+.lens::before{content:"";position:absolute;inset:3px;border-radius:50%;background:conic-gradient(from 0deg,var(--axtra-hi) 0 60deg,transparent 60deg 180deg,var(--axtra) 180deg 230deg,transparent 230deg);-webkit-mask:radial-gradient(circle,transparent 11px,#000 12px);mask:radial-gradient(circle,transparent 11px,#000 12px);animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wordmark{font-family:var(--f-display);font-weight:700;font-size:21px;letter-spacing:.22em;line-height:1;white-space:nowrap}
+.wordmark b{color:var(--gold);font-weight:700}
+.brand small{display:block;font-family:var(--f-display);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-top:4px;white-space:nowrap}
+.ticker{flex:1;min-width:0;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.04em;border-left:1px solid var(--line);padding-left:18px}
+.ticker b{color:var(--ink-2);font-weight:500}
+.ticker .ok{color:var(--lotus-hi)}
+.clock{font-family:var(--f-mono);text-align:right;line-height:1.15;white-space:nowrap}
+.clock .ck-t{font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.clock .ck-d{font-size:10.5px;color:var(--ink-3);letter-spacing:.06em}
+.pill{font-family:var(--f-display);font-size:10.5px;font-weight:600;letter-spacing:.16em;padding:5px 9px;border-radius:999px;border:1px solid currentColor;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.pill.on{color:var(--lotus-hi)} .pill.off{color:var(--makro-hi)}
+.acts{display:flex;gap:6px}
+.ib{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--panel);font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;transition:border-color .15s,background .15s;white-space:nowrap}
+.ib:hover{border-color:var(--axtra-hi)}
+.ib svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib.primary{background:var(--axtra);border-color:var(--axtra);color:#fff}
+.ib.primary:hover{background:#3A7FDB}
+.ib.gold{background:var(--gold);border-color:var(--gold);color:#16110A}
+.ib.sm{height:32px;font-size:11px;padding:0 10px}
+.ib:disabled{opacity:.5;cursor:default}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);gap:22px;position:relative;z-index:2;max-width:1500px;margin:0 auto}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--hdr));align-self:start;max-height:calc(100vh - var(--hdr) - env(safe-area-inset-top,0px));overflow-y:auto;padding-block:18px 24px;scrollbar-width:none}
+.side::-webkit-scrollbar{display:none}
+.grp{margin-bottom:16px}
+.grp h6{font-family:var(--f-display);font-size:10px;font-weight:600;letter-spacing:.26em;color:var(--ink-3);margin:0 0 6px 10px;text-transform:uppercase}
+.nv{display:grid;grid-template-columns:38px minmax(0,1fr) 34px;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);text-decoration:none;color:var(--ink-2);border:1px solid transparent;position:relative}
+.nv:hover{background:rgba(16,34,64,.6);color:var(--ink)}
+.nv[aria-current="page"]{background:linear-gradient(90deg,rgba(48,111,199,.28),rgba(48,111,199,.04));border-color:var(--line-2);color:var(--ink)}
+.nv[aria-current="page"]::before{content:"";position:absolute;left:-1px;top:8px;bottom:8px;width:2px;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.nv .cd{font-family:var(--f-mono);font-size:10.5px;color:var(--axtra-hi);letter-spacing:.06em}
+.nv .lb{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini{height:4px;border-radius:2px;overflow:hidden;display:flex;background:var(--line)}
+.mini i{display:block;height:100%}
+.mini .D{background:var(--lotus)} .mini .E{background:var(--gold)} .mini .R{background:var(--makro)}
+.side-foot{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);padding:10px;border-top:1px solid var(--line);margin-top:8px;line-height:1.6}
+
+/* ---------- main ---------- */
+.main{min-width:0;padding-block:18px 48px}
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.crumb{font-family:var(--f-display);font-size:11.5px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);margin-right:auto}
+.crumb b{color:var(--axtra-hi);font-weight:600}
+.filters{display:flex;gap:4px;padding:3px;border:1px solid var(--line-2);border-radius:6px;background:var(--well)}
+.fc{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:4px;font-size:12.5px;color:var(--ink-2)}
+.fc b{font-family:var(--f-mono);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.fc[aria-pressed="true"]{background:var(--panel-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-3)}
+.dot{width:8px;height:8px;border-radius:2px;flex:none}
+.dot.D{background:var(--lotus)} .dot.E{background:var(--gold)} .dot.R{background:var(--makro)} .dot.A{background:var(--axtra-hi)}
+.view{display:grid;gap:16px;animation:vin .28s ease}
+@keyframes vin{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.notice{display:flex;gap:12px;align-items:flex-start;padding:11px 14px;border:1px solid rgba(246,194,74,.4);border-radius:var(--r);background:rgba(246,194,74,.06);font-size:13.5px;color:var(--ink-2)}
+.notice strong{color:var(--gold);font-family:var(--f-display);letter-spacing:.12em;white-space:nowrap;font-size:12px;padding-top:1px}
+.eyebrow{font-family:var(--f-display);font-size:11px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:var(--axtra-hi)}
+.ph{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.ph h3{font-family:var(--f-display);font-size:13px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;margin:0;flex:1;min-width:0;color:var(--ink-2)}
+.code{font-family:var(--f-mono);font-size:11px;color:var(--axtra-hi);border:1px solid rgba(134,176,236,.4);border-radius:3px;padding:2px 6px;letter-spacing:.08em;flex:none}
+
+/* overview hero */
+.hero{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr);gap:28px;align-items:center;padding:24px}
+.core{position:relative;aspect-ratio:1;width:100%;max-width:250px}
+.core canvas{width:100%;height:100%;display:block}
+.core .c-in{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}
+.c-pct{font-family:var(--f-display);font-weight:700;font-size:46px;line-height:1}
+.c-lbl{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.c-sub{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);margin-top:3px}
+.hero-r{min-width:0;display:grid;gap:14px}
+.hero h1{font-family:var(--f-display);font-weight:600;font-size:clamp(24px,3vw,36px);line-height:1.1;margin:0;text-wrap:balance}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.specs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.spec{background:var(--well);padding:10px 12px;min-width:0}
+.spec .sl{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between;gap:6px}
+.spec .sv{font-family:var(--f-mono);font-size:14px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.spec .sl i{width:6px;height:6px;border-radius:50%;margin-top:3px}
+.spec .sl i.D{background:var(--lotus)} .spec .sl i.E{background:var(--gold)} .spec .sl i.R{background:var(--makro)}
+
+.gauges{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.g{padding:14px 14px 10px;min-width:0;overflow:hidden}
+.g .gl{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between;gap:6px;align-items:center}
+.g .gv{font-family:var(--f-display);font-weight:600;font-size:32px;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.g .gv small{font-family:var(--f-body);font-size:12px;color:var(--ink-3);font-weight:500;margin-left:4px}
+.g canvas{width:100%;height:36px;display:block;margin-top:6px}
+.g .gn{font-size:11px;color:var(--ink-3);margin-top:4px}
+
+.matrix{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;padding:16px}
+.mt{display:grid;gap:8px;padding:14px;text-decoration:none;--c:var(--line-3);transition:transform .15s}
+.mt:hover{--c:var(--gold);transform:translateY(-2px)}
+.mt .mh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mt .mn{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.mt .ms{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);display:flex;gap:10px}
+.mt .ms .D{color:var(--lotus-hi)} .mt .ms .E{color:var(--gold)} .mt .ms .R{color:var(--makro-hi)}
+.mt .mini{height:5px}
+.locked{display:flex;flex-wrap:wrap;gap:6px;padding:14px 16px 16px}
+.lk{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);padding:5px 9px;border:1px solid rgba(218,56,50,.35);border-radius:3px;background:repeating-linear-gradient(135deg,rgba(218,56,50,.06) 0 6px,transparent 6px 12px)}
+.lk svg{width:11px;height:11px;stroke:var(--makro-hi);fill:none;stroke-width:2}
+
+/* module view */
+.vh{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);gap:24px;align-items:end;padding:22px 24px}
+.vh-l{display:flex;gap:18px;align-items:flex-start;min-width:0}
+.bigcode{font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.06em;color:var(--axtra-hi);border:1.5px solid var(--line-3);border-radius:var(--r);padding:10px 12px;line-height:1;flex:none;background:rgba(48,111,199,.12)}
+.vh h2{font-family:var(--f-display);font-weight:600;font-size:clamp(26px,3.2vw,38px);line-height:1.05;margin:4px 0 6px;letter-spacing:.02em}
+.vh p{margin:0;color:var(--ink-2);font-size:14px;max-width:62ch}
+.vh-r{display:grid;gap:10px}
+.pbar{height:8px;display:flex;gap:2px}
+.pbar i{display:block;height:100%;border-radius:1px}
+.pbar .D{background:var(--lotus)} .pbar .E{background:var(--gold)} .pbar .R{background:var(--makro)}
+.pcount{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3)}
+.pcount b{font-weight:500}.pcount .D b{color:var(--lotus-hi)}.pcount .E b{color:var(--gold)}.pcount .R b{color:var(--makro-hi)}
+.vh-acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.cell{padding:12px 14px 13px;background:linear-gradient(180deg,rgba(16,34,64,.7),rgba(9,20,40,.7));border:1px solid var(--line);border-radius:var(--r);min-width:0;display:grid;gap:5px;align-content:start;position:relative}
+.cell::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:2px;border-radius:1px}
+.cell[data-t="D"]::before{background:var(--lotus)} .cell[data-t="E"]::before{background:var(--gold)} .cell[data-t="R"]::before{background:var(--makro)}
+.cell.wide{grid-column:1/-1}
+.cell .ck{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.cell .k{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.cell .v{font-family:var(--f-mono);font-size:16px;color:var(--ink);overflow-wrap:anywhere;font-variant-numeric:tabular-nums;line-height:1.3}
+.cell .v.long{font-size:12px;color:var(--ink-2);line-height:1.5}
+.cell .n{font-size:11.5px;color:var(--ink-3)}
+.cell[data-t="R"]{background:repeating-linear-gradient(135deg,rgba(218,56,50,.05) 0 7px,transparent 7px 14px),rgba(6,15,30,.8)}
+.cell[data-t="R"] .v{color:var(--ink-3);font-size:13px;letter-spacing:.08em}
+.t{font-family:var(--f-mono);font-style:normal;font-size:9.5px;font-weight:600;letter-spacing:.08em;padding:2px 5px;border-radius:2px;border:1px solid;line-height:1.3;flex:none}
+.t.D{color:var(--lotus-hi);border-color:rgba(67,147,143,.6)}
+.t.E{color:var(--gold);border-color:rgba(246,194,74,.55)}
+.t.R{color:var(--makro-hi);border-color:rgba(218,56,50,.6)}
+body[data-filter="D"] .cell:not([data-t="D"]),body[data-filter="E"] .cell:not([data-t="E"]),body[data-filter="R"] .cell:not([data-t="R"]){display:none}
+details.ext summary{cursor:pointer;color:var(--axtra-hi);font-family:var(--f-mono);font-size:12px}
+details.ext div{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);line-height:1.7;margin-top:6px;overflow-wrap:anywhere}
+
+/* capability grid */
+.caps{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.cap{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:var(--r);background:rgba(9,20,40,.8);border:1px solid var(--line);font-size:13px;min-width:0}
+.cap span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cap i{width:8px;height:8px;border-radius:50%;flex:none}
+.cap.y i{background:var(--lotus);box-shadow:0 0 8px var(--lotus)}
+.cap.n{color:var(--ink-3);background:repeating-linear-gradient(135deg,rgba(218,56,50,.04) 0 7px,transparent 7px 14px),rgba(6,15,30,.8)}
+.cap.n i{border:1.5px solid var(--makro)}
+
+/* labs */
+.lab-b{padding:16px;display:grid;gap:14px}
+.status{font-size:13px;color:var(--ink-2);padding:9px 12px;border-radius:var(--r);background:var(--well);border:1px dashed var(--line-2)}
+.status.ok{border-style:solid;border-color:rgba(67,147,143,.55);color:var(--lotus-hi)}
+.status.bad{border-style:solid;border-color:rgba(218,56,50,.55);color:var(--makro-hi)}
+.motion-viz{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.stage{aspect-ratio:1;max-width:100%;background:radial-gradient(circle at 50% 50%,rgba(48,111,199,.12),transparent 70%),var(--well);border:1px solid var(--line);border-radius:var(--r);display:grid;place-items:center;perspective:700px;position:relative;overflow:hidden}
+.slab{width:44%;height:62%;border-radius:12px;border:2px solid var(--axtra-hi);background:linear-gradient(160deg,rgba(48,111,199,.5),rgba(9,20,40,.85));box-shadow:0 0 30px rgba(48,111,199,.45);transform-style:preserve-3d;transition:transform .06s linear;position:relative}
+.slab::after{content:"";position:absolute;left:50%;top:7px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--gold)}
+.level{position:absolute;inset:14%;border-radius:50%;border:1px solid var(--line-2);box-shadow:inset 0 0 0 30px rgba(48,111,199,.04)}
+.level::before,.level::after{content:"";position:absolute;background:var(--line-2)}
+.level::before{left:50%;top:0;bottom:0;width:1px}.level::after{top:50%;left:0;right:0;height:1px}
+.bubble{position:absolute;width:24px;height:24px;border-radius:50%;background:var(--gold);box-shadow:0 0 16px var(--gold);left:50%;top:50%;margin:-12px 0 0 -12px;transition:transform .06s linear}
+.stage .sc{position:absolute;left:10px;top:8px;font-size:9.5px;letter-spacing:.22em;color:var(--ink-3);text-transform:uppercase}
+.readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ro{background:var(--well);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;min-width:0}
+.ro .rl{font-size:9.5px;letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase}
+.ro .rv{font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.touch-grid{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px}
+.touch-grid .readout{grid-template-columns:minmax(0,1fr);align-content:start}
+.pad-wrap{position:relative}
+#pad{width:100%;height:max(340px,calc(100vh - 360px));display:block;border:1px solid var(--line-2);border-radius:var(--r);touch-action:none;cursor:crosshair;
+  background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/28px 28px,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/28px 28px,var(--well)}
+.pad-hint{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none;color:var(--ink-3);font-size:13px;gap:6px}
+.pad-hint b{font-family:var(--f-display);letter-spacing:.24em;color:var(--ink-2);font-size:15px}
+.bench-t{width:100%;border-collapse:collapse;font-size:13.5px}
+.bench-t th{font-family:var(--f-display);font-weight:600;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+.bench-t td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.bench-t td.num,.bench-t th.num{text-align:right}
+.bench-t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bench-t .unit{color:var(--ink-3);font-size:11px;margin-left:4px}
+.bar-c{height:6px;background:var(--well);border-radius:3px;overflow:hidden;min-width:70px}
+.bar-c i{display:block;height:100%;background:linear-gradient(90deg,var(--axtra),var(--axtra-hi));width:0;transition:width .5s ease}
+.delta.up{color:var(--lotus-hi)} .delta.down{color:var(--makro-hi)}
+.tscroll{overflow-x:auto}
+.progress{height:3px;background:var(--well);overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--axtra),var(--gold));transition:width .2s}
+.purpose{font-size:13px;color:var(--ink-3);margin:0}
+.log{font-family:var(--f-mono);font-size:12px;max-height:calc(100vh - 260px);min-height:300px;overflow:auto;padding:12px 16px;display:grid;align-content:start;gap:4px}
+.log div{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:12px}
+.log time{color:var(--ink-3)}
+.log .lv{font-size:9.5px;padding:1px 6px;border-radius:2px;align-self:center;letter-spacing:.08em}
+.log .lv.i{color:var(--axtra-hi);background:rgba(48,111,199,.18)}
+.log .lv.w{color:var(--gold);background:rgba(246,194,74,.14)}
+.log .lv.e{color:var(--makro-hi);background:rgba(218,56,50,.16)}
+.log .lv.s{color:var(--lotus-hi);background:rgba(67,147,143,.16)}
+.foot{color:var(--ink-3);font-size:12px;display:grid;gap:6px;max-width:80ch;padding-top:8px}
+.foot b{color:var(--ink-2);font-family:var(--f-display);letter-spacing:.14em;font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--axtra-hi);padding:10px 16px;border-radius:var(--r);font-size:14px;opacity:0;transition:.25s;z-index:40;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+body[data-view="motion"] .filters,body[data-view="pencil"] .filters,body[data-view="benchmark"] .filters,body[data-view="log"] .filters,body[data-view="capabilities"] .filters{display:none}
+.filters{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.fc{flex:none}
+@media (max-width:1180px){.ticker{display:none}.specs{grid-template-columns:repeat(2,minmax(0,1fr))}.top-in{justify-content:space-between}}
+@media (max-width:1000px){.brand small,.clock .ck-d{display:none}}
+@media (max-width:1100px){.gauges{grid-template-columns:repeat(2,minmax(0,1fr))}.touch-grid{grid-template-columns:minmax(0,1fr)}.touch-grid .readout{grid-template-columns:repeat(3,minmax(0,1fr));order:-1}#pad{height:max(320px,calc(100vh - 620px))}}
+@media (max-width:480px){.pill{display:none}.top-in{gap:10px}}
+@media (max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0}
+  .side{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--hdr));z-index:15;max-height:none;overflow-x:auto;overflow-y:hidden;padding-block:8px;display:flex;gap:4px;background:rgba(4,10,20,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px))}
+  .grp{display:contents}.grp h6,.side-foot{display:none}
+  .nv{grid-template-columns:auto auto;flex:none;padding:7px 10px;gap:6px}
+  .nv .mini{display:none}
+  .nv[aria-current="page"]::before{left:8px;right:8px;top:auto;bottom:-1px;width:auto;height:2px}
+  .vh{grid-template-columns:minmax(0,1fr);align-items:start}
+  .vh-acts{justify-content:flex-start}
+}
+@media (max-width:720px){
+  .clock{display:none}
+  .ib .tx{display:none}.ib{padding:0 10px}
+  .hero{grid-template-columns:minmax(0,1fr);justify-items:center;padding:18px}
+  .hero-r{width:100%}
+  .core{max-width:210px}
+  .vh-l{flex-direction:column;gap:12px}
+  .motion-viz{grid-template-columns:minmax(0,1fr)}
+  .stage{max-width:320px;width:100%;justify-self:center}
+  .readout,.touch-grid .readout{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brand small{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<noscript><p style="color:#fff;padding:16px">EDITH needs JavaScript. Open this file in Safari, not in a file preview.</p></noscript>
+</head>
+<body>
+
+<div class="scan" aria-hidden="true"></div>
+
+<div class="boot" id="boot" hidden>
+  <div><div class="boot-mark">E<b>.</b>D<b>.</b>I<b>.</b>T<b>.</b>H<b>.</b></div></div>
+  <div class="boot-sub">Embedded Device Intelligence &amp; Telemetry Hub</div>
+  <div class="boot-bar"><i id="boot-bar"></i></div>
+  <div class="boot-log" id="boot-log"></div>
+  <div class="boot-skip">Tap to skip</div>
+</div>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#overview" aria-label="EDITH overview">
+      <span class="lens" aria-hidden="true"></span>
+      <span><span class="wordmark">E<b>.</b>D<b>.</b>I<b>.</b>T<b>.</b>H<b>.</b></span><small>Device Intelligence &amp; Telemetry Hub</small></span>
+    </a>
+    <div class="ticker" id="ticker">SYS <b>BOOTING</b></div>
+    <div class="clock"><div class="ck-t" id="clk-t">--:--:--</div><div class="ck-d" id="clk-d">—</div></div>
+    <span class="pill on" id="net-pill">ONLINE</span>
+    <div class="acts">
+      <button class="ib" id="btn-brief" type="button" aria-label="Spoken briefing"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span class="tx">Brief</span></button>
+      <button class="ib" id="btn-refresh" type="button" aria-label="Rescan"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg><span class="tx">Rescan</span></button>
+      <button class="ib primary" id="btn-export" type="button" aria-label="Export report"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 19h16"/></svg><span class="tx">Export</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="shell wrap">
+  <nav class="side" id="side" aria-label="Modules"></nav>
+
+  <main class="main">
+    <div class="toolbar">
+      <div class="crumb" id="crumb">EDITH / <b>Overview</b></div>
+      <div class="filters" role="group" aria-label="Show readings by source">
+        <button class="fc" type="button" data-f="all" aria-pressed="true"><span class="dot A"></span>All <b id="n-all">0</b></button>
+        <button class="fc" type="button" data-f="D" aria-pressed="false"><span class="dot D"></span>Direct <b id="n-D">0</b></button>
+        <button class="fc" type="button" data-f="E" aria-pressed="false"><span class="dot E"></span>Estimate <b id="n-E">0</b></button>
+        <button class="fc" type="button" data-f="R" aria-pressed="false"><span class="dot R"></span>Restricted <b id="n-R">0</b></button>
+      </div>
+    </div>
+
+    <div class="notice" id="frame-notice" hidden>
+      <strong>FRAMED VIEW</strong>
+      <span>EDITH is running inside an embedded viewer, which blocks motion sensors, battery data and most permission prompts. Blocked readings are marked RESTRICTED, never guessed. For full sensor access, host the standalone file over HTTPS and open it in Safari.</span>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section class="view" id="view-overview" data-title="Overview" data-group="EDITH">
+      <div class="hud hero">
+        <div class="core">
+          <canvas id="core" width="500" height="500" aria-hidden="true"></canvas>
+          <div class="c-in"><div class="c-pct" id="c-pct">—</div><div class="c-lbl">Readable</div><div class="c-sub" id="c-sub">scanning…</div></div>
+        </div>
+        <div class="hero-r">
+          <div class="eyebrow" id="eyebrow">Device profile</div>
+          <h1 id="headline">Reading what this iPad's browser will tell us…</h1>
+          <div class="specs" id="specs"></div>
+        </div>
+      </div>
+      <div class="gauges">
+        <div class="hud g"><div class="gl"><span>Refresh rate</span><span class="t E">EST</span></div><div class="gv" id="g-hz">—<small>Hz</small></div><canvas id="s-hz" width="260" height="72"></canvas><div class="gn">Median frame interval</div></div>
+        <div class="hud g"><div class="gl"><span>Main-thread lag</span><span class="t E">EST</span></div><div class="gv" id="g-lag">—<small>ms</small></div><canvas id="s-lag" width="260" height="72"></canvas><div class="gn">100 ms timer drift</div></div>
+        <div class="hud g"><div class="gl"><span>Network RTT</span><span class="t E">EST</span></div><div class="gv" id="g-rtt">—<small>ms</small></div><canvas id="s-rtt" width="260" height="72"></canvas><div class="gn" id="g-rtt-n"><a href="#network">Run the network test</a></div></div>
+        <div class="hud g"><div class="gl"><span>Viewport</span><span class="t D">DIR</span></div><div class="gv" id="g-vp">—</div><canvas id="s-vp" width="260" height="72"></canvas><div class="gn" id="g-vp-n">—</div></div>
+      </div>
+      <div class="hud">
+        <div class="ph"><span class="code">MTX</span><h3>Module matrix</h3></div>
+        <div class="matrix" id="matrix"></div>
+      </div>
+      <div class="hud" style="--c:var(--makro)">
+        <div class="ph"><span class="code" style="color:var(--makro-hi);border-color:rgba(218,56,50,.5)">LCK</span><h3>Locked by iPadOS</h3></div>
+        <div class="locked" id="locked"></div>
+      </div>
+      <div class="foot">
+        <div><b>PRINCIPLE</b> Real data only. DIRECT means an API returned it. ESTIMATE means EDITH measured or derived it here, and the method is shown. RESTRICTED means iPadOS or this browser does not expose it, so no value is invented.</div>
+      </div>
+    </section>
+
+    <!-- module views are built by script -->
+    <div id="mod-views"></div>
+
+    <!-- CAPABILITIES -->
+    <section class="view" id="view-capabilities" data-title="Capabilities" data-group="System" hidden>
+      <div class="hud vh">
+        <div class="vh-l"><span class="bigcode">CAP</span><div><div class="eyebrow">System · Module</div><h2>Web capability matrix</h2><p>Feature presence checks. Present means the API exists here, not that every use of it will succeed.</p></div></div>
+        <div class="vh-r"><div class="pbar" id="cap-bar"></div><div class="pcount" id="cap-count"></div></div>
+      </div>
+      <div class="caps" id="caps"></div>
+    </section>
+
+    <!-- MOTION LAB -->
+    <section class="view" id="view-motion" data-title="Motion lab" data-group="Labs" hidden>
+      <div class="hud vh">
+        <div class="vh-l"><span class="bigcode">SNS</span><div><div class="eyebrow">Labs · Live sensors</div><h2>Motion &amp; orientation</h2><p>Accelerometer, gyroscope and compass readings, streamed live once you allow motion access.</p></div></div>
+        <div class="vh-r"><div class="vh-acts"><button class="ib gold" id="btn-sns" type="button">Start sensors</button></div></div>
+      </div>
+      <div class="hud lab-b">
+        <div class="status" id="sns-status">Sensors are off. iPadOS asks for permission before a page can read motion.</div>
+        <div class="motion-viz">
+          <div class="stage"><span class="sc">Attitude</span><div class="slab" id="slab"></div></div>
+          <div class="stage"><span class="sc">Level</span><div class="level"></div><div class="bubble" id="bubble"></div></div>
+        </div>
+        <div class="readout">
+          <div class="ro"><div class="rl">Accel X</div><div class="rv" id="ax">—</div></div>
+          <div class="ro"><div class="rl">Accel Y</div><div class="rv" id="ay">—</div></div>
+          <div class="ro"><div class="rl">Accel Z</div><div class="rv" id="az">—</div></div>
+          <div class="ro"><div class="rl">Alpha</div><div class="rv" id="oa">—</div></div>
+          <div class="ro"><div class="rl">Beta</div><div class="rv" id="ob">—</div></div>
+          <div class="ro"><div class="rl">Gamma</div><div class="rv" id="og">—</div></div>
+          <div class="ro"><div class="rl">Rotation α/β/γ</div><div class="rv" id="rr">—</div></div>
+          <div class="ro"><div class="rl">Heading</div><div class="rv" id="hd">—</div></div>
+          <div class="ro"><div class="rl">Sample rate</div><div class="rv" id="si">—</div></div>
+        </div>
+        <canvas id="s-acc" width="900" height="90" style="width:100%;height:46px" aria-label="Acceleration magnitude"></canvas>
+      </div>
+    </section>
+
+    <!-- PENCIL LAB -->
+    <section class="view" id="view-pencil" data-title="Pencil lab" data-group="Labs" hidden>
+      <div class="hud vh">
+        <div class="vh-l"><span class="bigcode">TCH</span><div><div class="eyebrow">Labs · Live input</div><h2>Pencil &amp; touch</h2><p>Draw with fingers or Apple Pencil. Pressure, tilt, contact size and input rate are read from every pointer event.</p></div></div>
+        <div class="vh-r"><div class="vh-acts"><button class="ib" id="btn-clear" type="button">Clear pad</button></div></div>
+      </div>
+      <div class="touch-grid">
+        <div class="pad-wrap">
+          <canvas id="pad" aria-label="Drawing pad for touch and Apple Pencil input"></canvas>
+          <div class="pad-hint" id="pad-hint"><b>DRAW HERE</b><span>Gold strokes are Pencil, blue are fingers.</span></div>
+        </div>
+        <div class="readout">
+          <div class="ro"><div class="rl">Input type</div><div class="rv" id="p-type">—</div></div>
+          <div class="ro"><div class="rl">Pressure</div><div class="rv" id="p-pr">—</div></div>
+          <div class="ro"><div class="rl">Input rate</div><div class="rv" id="p-hz">—</div></div>
+          <div class="ro"><div class="rl">Tilt X / Y</div><div class="rv" id="p-tilt">—</div></div>
+          <div class="ro"><div class="rl">Altitude / azimuth</div><div class="rv" id="p-alt">—</div></div>
+          <div class="ro"><div class="rl">Contact size</div><div class="rv" id="p-sz">—</div></div>
+          <div class="ro"><div class="rl">Active points</div><div class="rv" id="p-n">0</div></div>
+          <div class="ro"><div class="rl">Max at once</div><div class="rv" id="p-max">0</div></div>
+          <div class="ro"><div class="rl">Pencil hover</div><div class="rv" id="p-hov">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BENCHMARK -->
+    <section class="view" id="view-benchmark" data-title="Benchmark" data-group="Labs" hidden>
+      <div class="hud vh">
+        <div class="vh-l"><span class="bigcode">BEN</span><div><div class="eyebrow">Labs · Performance</div><h2>Compute suite</h2><p>Nine timed workloads, about 5 seconds in total, compared with your previous run on this iPad. This is browser-side throughput, not a standard CPU score.</p></div></div>
+        <div class="vh-r"><div class="vh-acts"><button class="ib gold" id="btn-bench" type="button">Run suite</button></div></div>
+      </div>
+      <div class="hud">
+        <div class="progress" aria-hidden="true"><i id="bench-prog"></i></div>
+        <div class="tscroll">
+          <table class="bench-t">
+            <thead><tr><th>Workload</th><th class="num">This run</th><th class="num">Previous</th><th class="num">Change</th><th style="width:28%">Relative to best</th></tr></thead>
+            <tbody id="bench-body"></tbody>
+          </table>
+        </div>
+        <div class="lab-b"><div class="status" id="bench-status">Keep EDITH in front while it runs. Results from a hidden page are marked invalid.</div></div>
+      </div>
+    </section>
+
+    <!-- LOG -->
+    <section class="view" id="view-log" data-title="System log" data-group="System" hidden>
+      <div class="hud">
+        <div class="ph"><span class="code">LOG</span><h3>System log</h3></div>
+        <div class="log" id="log-body" role="log"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const ua=navigator.userAgent;
+const FRAMED=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+const mq=q=>{try{return matchMedia(q).matches}catch(e){return false}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtB=b=>{if(b==null||isNaN(b))return"—";const u=["B","KB","MB","GB","TB"];let i=0;while(b>=1024&&i<u.length-1){b/=1024;i++}return(b>=100||i===0?b.toFixed(0):b.toFixed(1))+" "+u[i]};
+const yn=b=>b?"Yes":"No";
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const LOCK='<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
+/* ---------------- log ---------------- */
+const LOG=[];
+function log(msg,lv="i"){
+  const now=new Date();const ts=now.toTimeString().slice(0,8)+"."+String(now.getMilliseconds()).padStart(3,"0");
+  LOG.push({t:now.toISOString(),lv,msg});
+  const el=document.createElement("div");
+  el.innerHTML=`<time>${ts}</time><span class="lv ${lv}">${({i:"INFO",w:"WARN",e:"FAIL",s:"OK"})[lv]}</span><span>${esc(msg)}</span>`;
+  const box=$("#log-body");box.appendChild(el);box.scrollTop=box.scrollHeight;
+  if(LOG.length>300){LOG.shift();box.firstChild&&box.firstChild.remove()}
+}
+let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600)}
+
+/* ---------------- row helpers ---------------- */
+const row=(k,v,t,n,o={})=>({k,v:v==null||v===""?"Not exposed":String(v),t,n,...o});
+const D=(k,v,n,o)=>row(k,v,v==null?"R":"D",n,o);
+const E=(k,v,n,o)=>row(k,v,v==null?"R":"E",n,o);
+const RS=(k,n)=>row(k,"Not exposed","R",n);
+
+/* ---------------- probes ---------------- */
+function parseBrowser(){
+  const list=[["Chrome for iPadOS",/CriOS\/([\d.]+)/],["Firefox for iPadOS",/FxiOS\/([\d.]+)/],["Edge for iPadOS",/EdgiOS\/([\d.]+)/],["Edge",/Edg\/([\d.]+)/],["Chrome",/Chrome\/([\d.]+)/],["Firefox",/Firefox\/([\d.]+)/],["Safari",/Version\/([\d.]+).*Safari/]];
+  for(const[n,re]of list){const m=ua.match(re);if(m)return{name:n,ver:m[1]}}
+  return{name:"Unknown",ver:null};
+}
+const BROWSER=parseBrowser();
+const IPAD=/iPad/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+let GL=null;
+function probeGL(){
+  if(GL)return GL;
+  const c=document.createElement("canvas");let gl=null,v=0;
+  try{gl=c.getContext("webgl2");v=gl?2:0;if(!gl){gl=c.getContext("webgl")||c.getContext("experimental-webgl");v=gl?1:0}}catch(e){}
+  if(!gl)return GL={v:0};
+  const P=p=>{try{return gl.getParameter(p)}catch(e){return null}};
+  const dbg=gl.getExtension("WEBGL_debug_renderer_info");const an=gl.getExtension("EXT_texture_filter_anisotropic");
+  GL={v,renderer:P(gl.RENDERER),vendor:P(gl.VENDOR),version:P(gl.VERSION),glsl:P(gl.SHADING_LANGUAGE_VERSION),
+    ur:dbg?P(dbg.UNMASKED_RENDERER_WEBGL):null,uv:dbg?P(dbg.UNMASKED_VENDOR_WEBGL):null,
+    maxTex:P(gl.MAX_TEXTURE_SIZE),vp:P(gl.MAX_VIEWPORT_DIMS),rb:P(gl.MAX_RENDERBUFFER_SIZE),units:P(gl.MAX_TEXTURE_IMAGE_UNITS),
+    attribs:P(gl.MAX_VERTEX_ATTRIBS),samples:v===2?P(gl.MAX_SAMPLES):null,aniso:an?P(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT):null,exts:gl.getSupportedExtensions()||[]};
+  try{gl.getExtension("WEBGL_lose_context")?.loseContext()}catch(e){}
+  return GL;
+}
+function wasmSimd(){try{return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]))}catch(e){return false}}
+function timerRes(){let min=Infinity,last=performance.now();const s=last;while(performance.now()-s<25){const t=performance.now();const d=t-last;if(d>0){if(d<min)min=d;last=t}}return isFinite(min)?min:null}
+
+/* ---------------- live metrics ---------------- */
+const LIVE={hz:null,lag:null,rtt:null,hzS:[],lagS:[],rttS:[],vpS:[]};
+function spark(cv,data,color,opts={}){
+  const ctx=cv.getContext("2d");const w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle="rgba(130,172,233,.12)";ctx.lineWidth=1;
+  for(let i=1;i<3;i++){const y=Math.round(h*i/3)+.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  if(!data.length)return;
+  const max=opts.max??(Math.max(...data)*1.15||1),min=opts.min??0;
+  const n=opts.n||data.length;const step=w/Math.max(n-1,1);
+  const pts=data.map((d,i)=>[i*step,h-4-((d-min)/(max-min||1))*(h-8)]);
+  const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,color+"55");g.addColorStop(1,color+"00");
+  ctx.beginPath();ctx.moveTo(pts[0][0],h);pts.forEach(p=>ctx.lineTo(p[0],p[1]));ctx.lineTo(pts[pts.length-1][0],h);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin="round";ctx.stroke();
+  const L=pts[pts.length-1];ctx.beginPath();ctx.arc(Math.min(L[0],w-5),L[1],4.5,0,7);ctx.fillStyle=color;ctx.fill();
+}
+const push=(a,v,n=60)=>{a.push(v);if(a.length>n)a.shift()};
+const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t};
+
+(()=>{let last=0,deltas=[],lastPush=0;
+  function f(t){if(last){const d=t-last;if(d>0&&d<100)deltas.push(d);if(deltas.length>90)deltas.shift()}last=t;
+    if(t-lastPush>500&&deltas.length>20&&!document.hidden){lastPush=t;const s=[...deltas].sort((a,b)=>a-b);const hz=1000/s[s.length>>1];
+      LIVE.hz=Math.round(hz);push(LIVE.hzS,hz,40);$("#g-hz").innerHTML=`${LIVE.hz}<small>Hz</small>`;spark($("#s-hz"),LIVE.hzS,"#86B0EC",{min:0,max:Math.max(130,...LIVE.hzS)});
+      setTxt("v-hz",`${LIVE.hz} Hz`);}
+    requestAnimationFrame(f)}
+  requestAnimationFrame(f)})();
+(()=>{let exp=performance.now()+100;setInterval(()=>{const now=performance.now();const lag=Math.max(0,now-exp);exp=now+100;if(document.hidden)return;
+  LIVE.lag=lag;push(LIVE.lagS,lag,40);$("#g-lag").innerHTML=`${lag.toFixed(1)}<small>ms</small>`;spark($("#s-lag"),LIVE.lagS,"#F6C24A",{min:0,max:Math.max(20,...LIVE.lagS)});
+  setTxt("v-lag",lag.toFixed(1)+" ms");},100)})();
+function vpTick(){const w=innerWidth,h=innerHeight;$("#g-vp").innerHTML=`${w}<small>×</small>${h}`;push(LIVE.vpS,w*h/1e4,40);spark($("#s-vp"),LIVE.vpS,"#66BAB4",{min:0});
+  $("#g-vp-n").textContent=`${mq("(orientation: portrait)")?"Portrait":"Landscape"} · ${devicePixelRatio}× density`}
+vpTick();setInterval(vpTick,1000);
+let rsT;addEventListener("resize",()=>{clearTimeout(rsT);rsT=setTimeout(()=>{log(`Viewport changed to ${innerWidth}×${innerHeight} (${mq("(orientation: portrait)")?"portrait":"landscape"})`);rescan(true)},400)});
+
+function clock(){const d=new Date();$("#clk-t").textContent=d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  const off=-d.getTimezoneOffset();const sign=off>=0?"+":"−";const oh=String(Math.floor(Math.abs(off)/60)).padStart(2,"0"),om=String(Math.abs(off)%60).padStart(2,"0");
+  $("#clk-d").textContent=`${d.toLocaleDateString([], {weekday:"short",day:"2-digit",month:"short",year:"numeric"})} · UTC${sign}${oh}:${om}`;}
+clock();setInterval(clock,1000);
+function netPill(){const p=$("#net-pill");p.className="pill "+(navigator.onLine?"on":"off");p.textContent=navigator.onLine?"ONLINE":"OFFLINE"}
+netPill();addEventListener("online",()=>{netPill();log("Network came online","s")});addEventListener("offline",()=>{netPill();log("Network went offline","e")});
+document.addEventListener("visibilitychange",()=>log(document.hidden?"Page hidden":"Page visible"));
+
+/* ---------------- network test ---------------- */
+async function timeFetch(url,opt){const t0=performance.now();const r=await fetch(url,opt);if(opt.mode!=="no-cors"&&!r.ok)throw new Error("HTTP "+r.status);await r.arrayBuffer().catch(()=>{});return performance.now()-t0}
+let NETRES=null;
+const qs=(u,k)=>u+(u.includes("?")?"&":"?")+k+"="+Date.now()+Math.random().toString(36).slice(2,6);
+async function netTest(btn){
+  if(btn){btn.disabled=true;btn.textContent="Testing…"}log("Network test started");
+  const targets=[["artifact host","ping.txt",{cache:"no-store"}],["this page's origin",location.href.split("#")[0],{cache:"no-store"}],["gstatic.com (opaque)","https://www.gstatic.com/generate_204",{cache:"no-store",mode:"no-cors"}]];
+  let target=null;
+  for(const t of targets){try{await timeFetch(qs(t[1],"w"),t[2]);target=t;break}catch(e){}}
+  if(!target){NETRES={err:"No endpoint reachable from this view"};log("Network test: no endpoint reachable","e")}
+  else{
+    const times=[];for(let i=0;i<12;i++){try{times.push(await timeFetch(qs(target[1],"n"),target[2]))}catch(e){}await sleep(60)}
+    times.sort((a,b)=>a-b);
+    const med=times[times.length>>1],min=times[0],max=times[times.length-1];
+    const diffs=[];for(let i=1;i<times.length;i++)diffs.push(Math.abs(times[i]-times[i-1]));const jitter=diffs.reduce((a,b)=>a+b,0)/Math.max(diffs.length,1);
+    let tput=null;
+    try{const t0=performance.now();const r=await fetch(qs("probe.wasm","t"),{cache:"no-store"});if(!r.ok)throw 0;const buf=await r.arrayBuffer();const dt=(performance.now()-t0)/1000;if(buf.byteLength>100000)tput={mbps:buf.byteLength*8/dt/1e6,bytes:buf.byteLength,s:dt}}catch(e){}
+    NETRES={target:target[0],n:times.length,med,min,max,jitter,tput};
+    LIVE.rtt=med;push(LIVE.rttS,med,20);$("#g-rtt").innerHTML=`${med.toFixed(0)}<small>ms</small>`;spark($("#s-rtt"),LIVE.rttS,"#43938F",{min:0});
+    $("#g-rtt-n").textContent=`${times.length} samples · jitter ${jitter.toFixed(1)} ms`;
+    log(`Network: median RTT ${med.toFixed(1)} ms to ${target[0]}`+(tput?`, download ${tput.mbps.toFixed(1)} Mbit/s`:""),"s");
+  }
+  if(btn){btn.disabled=false;btn.textContent="Run network test"}renderModule("net");
+}
+
+/* ---------------- modules ---------------- */
+let BAT=null,BATT_BOUND=false,VOICES=null,MEDIA_DEC=null;
+const MODULES=[
+ {id:"id",route:"identity",group:"Hardware",code:"ID",title:"Device identity",purpose:"Who this device says it is, through the signals the browser exposes.",collect:async()=>{
+   const ro=Intl.DateTimeFormat().resolvedOptions();
+   let hc=null;try{hc=new Intl.DateTimeFormat(undefined,{hour:"numeric"}).resolvedOptions().hourCycle}catch(e){}
+   const macTouch=navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1;
+   return[
+    E("Device class",IPAD?"iPad":/iPhone/.test(ua)?"iPhone":/Android/.test(ua)?"Android device":"Desktop or other",macTouch?"Desktop-class user agent plus multi-touch: the iPadOS signature":"Derived from the user-agent string"),
+    D("Platform string",navigator.platform),D("Browser vendor",navigator.vendor||"(empty)"),D("Product token",navigator.product),D("Max touch points",navigator.maxTouchPoints),
+    D("Cookies",navigator.cookieEnabled?"Enabled":"Disabled"),D("Preferred language",navigator.language),D("All languages",(navigator.languages||[]).join(", ")),
+    D("Time zone",ro.timeZone),D("Locale",ro.locale),D("Calendar · digits",`${ro.calendar} · ${ro.numberingSystem}`),
+    D("Clock cycle",hc?({h12:"12-hour",h23:"24-hour",h11:"12-hour (h11)",h24:"24-hour (h24)"})[hc]||hc:null),
+    D("Online",navigator.onLine?"Online":"Offline"),
+    navigator.userAgentData?D("UA Client Hints",navigator.userAgentData.brands.map(b=>b.brand+" "+b.version).join(", ")):RS("UA Client Hints","Not implemented in WebKit"),
+    RS("Model name","Apple does not expose the model identifier to web pages"),RS("Serial number"),
+   ]}},
+ {id:"os",route:"software",group:"Hardware",code:"OS",title:"Software & OS",purpose:"The browser and engine EDITH runs inside.",collect:async()=>{
+   const osTok=(ua.match(/OS (\d+[_\d]*) like Mac/)||[])[1];const macTok=(ua.match(/Mac OS X (\d+[_\d]*)/)||[])[1];
+   const engine=(ua.match(/AppleWebKit\/([\d.]+)/)||[])[1];const standalone=mq("(display-mode: standalone)")||navigator.standalone===true;
+   return[
+    E("Browser",BROWSER.name,"Parsed from the user-agent string"),
+    E("Browser version",BROWSER.ver,BROWSER.name==="Safari"?"Since Safari 26, the major number follows the iPadOS release":null),
+    osTok?E("OS version token",osTok.replace(/_/g,".")):macTok?E("OS version token",`Mac OS X ${macTok.replace(/_/g,".")} (frozen)`,"iPadOS sends a fixed desktop token, so this is not the real iPadOS version"):RS("OS version token"),
+    E("Engine",engine?`WebKit ${engine}`:/Gecko\//.test(ua)?"Gecko":null,engine?"The WebKit token is frozen and does not change with updates":null),
+    D("PDF viewer",navigator.pdfViewerEnabled==null?null:yn(navigator.pdfViewerEnabled)),D("Secure context",yn(window.isSecureContext)),
+    D("Embedded frame",FRAMED?"Yes, framed":"No, top-level"),D("Home Screen web app",standalone?"Yes":"No"),D("Cross-origin isolated",yn(window.crossOriginIsolated===true)),
+    RS("iPadOS build number","Not exposed to web pages"),
+    D("User agent",ua,null,{long:true}),D("App version",navigator.appVersion,null,{long:true}),
+   ]}},
+ {id:"dsp",route:"display",group:"Hardware",code:"DSP",title:"Display",purpose:"Screen geometry, colour and accessibility preferences. Refresh rate is measured live.",collect:async()=>{
+   const dpr=devicePixelRatio,s=screen,vv=window.visualViewport;
+   const ori=screen.orientation?.type||(mq("(orientation: portrait)")?"portrait":"landscape");
+   const gamut=mq("(color-gamut: rec2020)")?"Rec. 2020":mq("(color-gamut: p3)")?"Display P3":mq("(color-gamut: srgb)")?"sRGB":null;
+   const ang=screen.orientation?.angle??window.orientation;
+   return[
+    D("Screen",`${s.width} × ${s.height} pt`),D("Available screen",`${s.availWidth} × ${s.availHeight} pt`),D("Viewport",`${innerWidth} × ${innerHeight} pt`),
+    D("Pixel ratio",dpr+"×"),E("Panel pixels",`${Math.round(s.width*dpr)} × ${Math.round(s.height*dpr)} px`,"Screen points × pixel ratio"),
+    E("Refresh rate",LIVE.hz?LIVE.hz+" Hz":"measuring…","Median frame interval. Low Power Mode can cap it at 60 Hz",{id:"v-hz"}),
+    D("Color gamut",gamut),D("High dynamic range",yn(mq("(dynamic-range: high)"))),D("Color depth",s.colorDepth+"-bit"),
+    D("Orientation",ori.replace("-primary","").replace("-secondary"," (flipped)")),D("Rotation angle",ang!=null?ang+"°":null),
+    D("Visual viewport",vv?`${Math.round(vv.width)} × ${Math.round(vv.height)} @ ${vv.scale.toFixed(2)}×`:null),
+    D("Appearance",mq("(prefers-color-scheme: dark)")?"Dark":"Light"),D("Reduce motion",yn(mq("(prefers-reduced-motion: reduce)"))),
+    D("Reduce transparency",yn(mq("(prefers-reduced-transparency: reduce)"))),D("Increase contrast",yn(mq("(prefers-contrast: more)"))),
+    D("Primary pointer",mq("(pointer: fine)")?"Fine":mq("(pointer: coarse)")?"Coarse (touch)":"None"),
+    D("Fine pointer attached",mq("(any-pointer: fine)")?"Yes":"No","Trackpad, mouse or Pencil hover"),D("Hover",mq("(any-hover: hover)")?"Available":"Not available"),
+    RS("Brightness · True Tone","Panel brightness is never exposed"),
+   ]}},
+ {id:"cpu",route:"compute",group:"Hardware",code:"CPU",title:"Compute & memory",purpose:"Processing resources the browser reports, plus timing measured on this page.",collect:async()=>{
+   const pm=performance.memory;const tr=timerRes();
+   return[
+    D("Logical processors",navigator.hardwareConcurrency,"As reported by the browser, which may cap it"),
+    navigator.deviceMemory?E("Device memory",navigator.deviceMemory+" GB","Coarse bucket from the browser"):RS("Device memory","WebKit does not implement navigator.deviceMemory"),
+    pm?D("JS heap used",fmtB(pm.usedJSHeapSize)):RS("JS heap used","WebKit does not expose heap sizes"),pm?D("JS heap limit",fmtB(pm.jsHeapSizeLimit)):RS("JS heap limit"),
+    E("Timer resolution",tr!=null?(tr<0.01?(tr*1000).toFixed(1)+" µs":tr.toFixed(3)+" ms"):null,"Smallest step of performance.now() over 25 ms"),
+    E("Main-thread lag",LIVE.lag!=null?LIVE.lag.toFixed(1)+" ms":"measuring…","Drift of a 100 ms timer",{id:"v-lag"}),
+    D("WebAssembly",yn(typeof WebAssembly==="object")),D("WebAssembly SIMD",typeof WebAssembly==="object"?yn(wasmSimd()):null),
+    D("SharedArrayBuffer",yn(typeof SharedArrayBuffer==="function")),D("Web Workers",yn(typeof Worker==="function")),D("OffscreenCanvas",yn(typeof OffscreenCanvas==="function")),
+    RS("CPU utilisation","No web API reports system-wide load"),RS("CPU temperature"),
+   ]}},
+ {id:"gpu",route:"graphics",group:"Hardware",code:"GPU",title:"Graphics",purpose:"What WebGL and WebGPU report about the graphics stack.",collect:async()=>{
+   const g=probeGL();const rows=[];
+   if(!g.v)rows.push(RS("WebGL","No WebGL context could be created"));else{
+    rows.push(D("WebGL",`WebGL ${g.v}`),D("Renderer",g.renderer),D("Vendor",g.vendor),D("Unmasked renderer",g.ur),D("Unmasked vendor",g.uv),
+     D("Max texture",g.maxTex?g.maxTex+" px":null),D("Max viewport",g.vp?`${g.vp[0]} × ${g.vp[1]}`:null),D("Max renderbuffer",g.rb?g.rb+" px":null),D("Texture units",g.units),D("Vertex attributes",g.attribs),
+     g.samples!=null?D("MSAA samples",g.samples+"×"):RS("MSAA samples","Needs WebGL 2"),g.aniso!=null?D("Anisotropy",g.aniso+"×"):RS("Anisotropy","Extension not offered"),
+     D("GL version",g.version,null,{long:true}),D("GLSL",g.glsl,null,{long:true}),D("Extensions",g.exts.length+" supported",null,{ext:g.exts}));}
+   if(navigator.gpu){
+    try{const a=await navigator.gpu.requestAdapter();
+     if(a){let info=a.info;if(!info&&a.requestAdapterInfo)try{info=await a.requestAdapterInfo()}catch(e){}info=info||{};
+      rows.push(D("WebGPU","Adapter available"),D("Adapter vendor",info.vendor||null),D("Architecture",info.architecture||null),D("Adapter features",a.features?a.features.size:null),
+       D("Max 2D texture",a.limits?.maxTextureDimension2D?a.limits.maxTextureDimension2D+" px":null),D("Max buffer",a.limits?.maxBufferSize?fmtB(a.limits.maxBufferSize):null),
+       D("Workgroup invocations",a.limits?.maxComputeInvocationsPerWorkgroup||null),D("Canvas format",navigator.gpu.getPreferredCanvasFormat?.()||null));
+     }else rows.push(row("WebGPU","API present, no adapter granted","D"))}catch(e){rows.push(row("WebGPU","Adapter request failed","D",e.message))}
+   }else rows.push(RS("WebGPU","navigator.gpu is absent"));
+   rows.push(RS("GPU utilisation"),RS("GPU temperature"));return rows}},
+ {id:"pwr",route:"power",group:"Hardware",code:"PWR",title:"Battery & power",purpose:"Battery telemetry, only when the browser offers the Battery Status API.",collect:async()=>{
+   if(!BAT&&navigator.getBattery){try{BAT=await navigator.getBattery()}catch(e){}}
+   const rows=[];
+   if(BAT){
+    if(!BATT_BOUND){BATT_BOUND=true;["levelchange","chargingchange"].forEach(ev=>BAT.addEventListener(ev,()=>{log(`Battery ${Math.round(BAT.level*100)}%, ${BAT.charging?"charging":"on battery"}`);renderModule("pwr")}))}
+    const tm=s=>!isFinite(s)?"Unknown":`${Math.floor(s/3600)} h ${Math.round(s%3600/60)} min`;
+    rows.push(D("Battery level",Math.round(BAT.level*100)+"%"),D("Charging",yn(BAT.charging)),D("Time to full",BAT.charging?tm(BAT.chargingTime):"Not charging"),D("Time to empty",!BAT.charging?tm(BAT.dischargingTime):"Charging"));
+   }else rows.push(RS("Battery level","Safari does not implement the Battery Status API"),RS("Charging state"));
+   rows.push(RS("Low Power Mode","Not exposed. A ProMotion iPad pinned at 60 Hz can hint at it"),RS("Battery health"),RS("Cycle count"),RS("Battery temperature"),RS("Charging wattage"));
+   return rows}},
+ {id:"sto",route:"storage",group:"Hardware",code:"STO",title:"Storage",purpose:"Space this site may use in the browser. This is not total iPad storage.",collect:async()=>{
+   const rows=[];let est=null;try{est=await navigator.storage?.estimate?.()}catch(e){}
+   if(est)rows.push(D("Site usage",fmtB(est.usage)),D("Site quota",fmtB(est.quota)),E("Remaining quota",fmtB(est.quota-est.usage),"Quota minus usage"),E("Quota used",est.quota?((est.usage/est.quota)*100).toFixed(3)+"%":null));
+   else rows.push(RS("Site quota","StorageManager.estimate() unavailable in this view"));
+   let pers=null;try{pers=await navigator.storage?.persisted?.()}catch(e){}
+   rows.push(pers==null?RS("Persistent storage"):D("Persistent storage",pers?"Granted":"Best-effort"));
+   let ls=false;try{localStorage.setItem("__e","1");localStorage.removeItem("__e");ls=true}catch(e){}
+   let opfs=false;try{if(navigator.storage?.getDirectory){await navigator.storage.getDirectory();opfs=true}}catch(e){}
+   rows.push(D("localStorage",ls?"Writable":"Blocked"),D("IndexedDB",yn(!!window.indexedDB)),D("Cache Storage",yn("caches" in window)),D("Private file system",opfs?"Available":"Unavailable"),RS("Device capacity","Total and free iPad storage are not exposed"));
+   return rows}},
+ {id:"net",route:"network",group:"Connectivity",code:"NET",title:"Network",purpose:"Connection state, plus a latency and download probe you start yourself.",
+  actions:[{label:"Run network test",cls:"gold",fn:b=>netTest(b)}],collect:async()=>{
+   const c=navigator.connection;const rows=[D("Status",navigator.onLine?"Online":"Offline")];
+   if(NETRES?.err)rows.push(RS("Latency test",NETRES.err));
+   else if(NETRES)rows.push(E("Median RTT",NETRES.med.toFixed(1)+" ms",`${NETRES.n} HTTPS requests to ${NETRES.target}`),E("Min / max RTT",`${NETRES.min.toFixed(1)} / ${NETRES.max.toFixed(1)} ms`),E("Jitter",NETRES.jitter.toFixed(1)+" ms","Mean change between sorted samples"),
+     NETRES.tput?E("Download",NETRES.tput.mbps.toFixed(1)+" Mbit/s",`${fmtB(NETRES.tput.bytes)} single stream in ${NETRES.tput.s.toFixed(2)} s`):RS("Download","Probe file not reachable from this origin"));
+   else rows.push(row("Latency test","Not run yet","E","Press Run network test. It makes about 14 requests"));
+   if(c)rows.push(D("Connection type",c.type||null),D("Effective type",c.effectiveType||null),E("Downlink estimate",c.downlink!=null?c.downlink+" Mbit/s":null),E("RTT estimate",c.rtt!=null?c.rtt+" ms":null),D("Data saver",c.saveData!=null?yn(c.saveData):null));
+   else rows.push(RS("Connection type","Network Information API is not in WebKit"),RS("Effective bandwidth"));
+   rows.push(D("WebSocket",yn("WebSocket" in window)),D("WebRTC",yn("RTCPeerConnection" in window)),D("WebTransport",yn("WebTransport" in window)),RS("Wi-Fi name · signal"),RS("Cellular carrier"),RS("Local IP addresses"));
+   return rows}},
+ {id:"med",route:"media",group:"Connectivity",code:"MED",title:"Media",purpose:"Audio hardware, video decoders and speech, all read without turning anything on.",collect:async()=>{
+   const rows=[];
+   if(!MEDIA_DEC&&navigator.mediaCapabilities){
+    const tests=[["H.264 1080p",'video/mp4; codecs="avc1.640028"',1920,1080],["HEVC 4K",'video/mp4; codecs="hvc1.1.6.L153.B0"',3840,2160],["HEVC 10-bit 4K",'video/mp4; codecs="hvc1.2.4.L153.B0"',3840,2160],["VP9 4K",'video/webm; codecs="vp09.00.51.08"',3840,2160],["AV1 4K",'video/mp4; codecs="av01.0.12M.08"',3840,2160]];
+    MEDIA_DEC=[];
+    for(const[n,ct,w,h]of tests){try{const r=await navigator.mediaCapabilities.decodingInfo({type:"file",video:{contentType:ct,width:w,height:h,bitrate:20e6,framerate:30}});
+      MEDIA_DEC.push([n,!r.supported?"Not supported":r.powerEfficient?"Hardware · smooth":r.smooth?"Supported · smooth":"Supported"])}catch(e){MEDIA_DEC.push([n,null])}}}
+   if(MEDIA_DEC)MEDIA_DEC.forEach(([n,v])=>rows.push(D("Decode "+n,v)));else rows.push(RS("Media Capabilities"));
+   try{const AC=window.AudioContext||window.webkitAudioContext;if(AC){const ac=new AC();rows.push(D("Audio sample rate",ac.sampleRate+" Hz"),D("Output channels",ac.destination.maxChannelCount),ac.baseLatency!=null?D("Base latency",(ac.baseLatency*1000).toFixed(1)+" ms"):RS("Base latency"));ac.close?.()}else rows.push(RS("Web Audio"))}catch(e){rows.push(RS("Web Audio",e.message))}
+   rows.push(D("Media Source",window.ManagedMediaSource?"Managed Media Source":window.MediaSource?"MediaSource":"No"),D("Picture-in-Picture",yn(document.pictureInPictureEnabled||!!HTMLVideoElement.prototype.webkitSetPresentationMode)),D("Encrypted media",yn(!!navigator.requestMediaKeySystemAccess)));
+   if(navigator.mediaDevices?.enumerateDevices){try{const ds=await navigator.mediaDevices.enumerateDevices();const n=k=>ds.filter(d=>d.kind===k).length;const labeled=ds.some(d=>d.label);
+     rows.push(D("Cameras",n("videoinput"),labeled?null:"May be partial until camera permission is granted"),D("Microphones",n("audioinput")),D("Audio outputs",n("audiooutput")),labeled?D("Device labels",ds.map(d=>d.label).filter(Boolean).join(", "),null,{long:true}):RS("Device labels","Hidden until permission is granted"))}
+    catch(e){rows.push(RS("Media devices",e.message))}}else rows.push(RS("Media devices","enumerateDevices is not available in this view"));
+   if("speechSynthesis" in window){const v=speechSynthesis.getVoices();if(v.length)VOICES=v;rows.push(D("Speech voices",VOICES?`${VOICES.length} voices · ${new Set(VOICES.map(x=>x.lang)).size} languages`:"Loading…"))}else rows.push(RS("Speech synthesis"));
+   return rows}},
+ {id:"prm",route:"permissions",group:"Connectivity",code:"PRM",title:"Permissions",purpose:"Permission states as the browser reports them. A state does not mean the sensor is on.",collect:async()=>{
+   const names=[["camera","Camera"],["microphone","Microphone"],["geolocation","Location"],["notifications","Notifications"],["clipboard-read","Clipboard read"],["clipboard-write","Clipboard write"],["persistent-storage","Persistent storage"],["screen-wake-lock","Screen wake lock"]];
+   if(!navigator.permissions?.query)return names.map(([,l])=>RS(l,"Permissions API absent"));
+   const out=[];for(const[n,l]of names){try{const s=await navigator.permissions.query({name:n});out.push(D(l,s.state[0].toUpperCase()+s.state.slice(1)))}catch(e){out.push(RS(l,"This browser does not answer queries for it"))}}
+   return out}},
+];
+const CAPS=[
+ ["WebGL 2",()=>probeGL().v===2],["WebGPU",()=>!!navigator.gpu],["WebAssembly",()=>typeof WebAssembly==="object"],["Wasm SIMD",()=>wasmSimd()],["Web Workers",()=>typeof Worker==="function"],
+ ["Service Workers",()=>"serviceWorker" in navigator],["SharedArrayBuffer",()=>typeof SharedArrayBuffer==="function"],["OffscreenCanvas",()=>typeof OffscreenCanvas==="function"],["IndexedDB",()=>!!window.indexedDB],
+ ["Cache Storage",()=>"caches" in window],["File System (OPFS)",()=>!!navigator.storage?.getDirectory],["WebRTC",()=>"RTCPeerConnection" in window],["WebSocket",()=>"WebSocket" in window],["WebTransport",()=>"WebTransport" in window],
+ ["Web Audio",()=>!!(window.AudioContext||window.webkitAudioContext)],["Speech synthesis",()=>"speechSynthesis" in window],["Speech recognition",()=>!!(window.SpeechRecognition||window.webkitSpeechRecognition)],
+ ["Media capture",()=>!!navigator.mediaDevices?.getUserMedia],["Media Session",()=>"mediaSession" in navigator],["Picture-in-Picture",()=>!!(document.pictureInPictureEnabled||HTMLVideoElement.prototype.webkitSetPresentationMode)],
+ ["Async Clipboard",()=>!!navigator.clipboard],["Web Share",()=>!!navigator.share],["Vibration",()=>!!navigator.vibrate],["Web Bluetooth",()=>!!navigator.bluetooth],["WebUSB",()=>!!navigator.usb],
+ ["Web Serial",()=>!!navigator.serial],["WebHID",()=>!!navigator.hid],["Web NFC",()=>"NDEFReader" in window],["Geolocation",()=>"geolocation" in navigator],["Screen Wake Lock",()=>"wakeLock" in navigator],
+ ["Fullscreen",()=>!!(document.fullscreenEnabled||document.webkitFullscreenEnabled)],["Pointer Events",()=>!!window.PointerEvent],["Gamepad",()=>!!navigator.getGamepads],["Web Crypto",()=>!!window.crypto?.subtle],
+ ["Payment Request",()=>!!window.PaymentRequest],["Apple Pay JS",()=>!!window.ApplePaySession],["Notifications",()=>"Notification" in window],["Push API",()=>"PushManager" in window],["App Badging",()=>!!navigator.setAppBadge],
+ ["Web Locks",()=>!!navigator.locks],["Compression Streams",()=>"CompressionStream" in window],["WebXR",()=>!!navigator.xr],["View Transitions",()=>!!document.startViewTransition],["Popover API",()=>HTMLElement.prototype.hasOwnProperty("popover")],
+ ["CSS :has()",()=>CSS.supports("selector(:has(a))")],["Container queries",()=>CSS.supports("container-type: inline-size")],["Anchor positioning",()=>CSS.supports("anchor-name: --a")],["Device motion",()=>"DeviceMotionEvent" in window],
+];
+let CAPRES=[];
+
+/* ---------------- navigation ---------------- */
+const LABS=[["motion","SNS","Motion lab","Labs"],["pencil","TCH","Pencil lab","Labs"],["benchmark","BEN","Benchmark","Labs"],["capabilities","CAP","Capabilities","System"],["log","LOG","System log","System"]];
+const NAV=[["overview","OVR","Overview","EDITH"],...MODULES.map(m=>[m.route,m.code,m.title.replace(" & memory","").replace("Battery & power","Power").replace("Software & OS","Software").replace("Device identity","Identity"),m.group]),...LABS];
+function buildNav(){
+  const groups={};NAV.forEach(n=>{(groups[n[3]]=groups[n[3]]||[]).push(n)});
+  $("#side").innerHTML=Object.entries(groups).map(([g,items])=>`<div class="grp"><h6>${g==="EDITH"?"Console":g}</h6>${items.map(([r,c,l])=>{const m=MODULES.find(x=>x.route===r);return `<a class="nv" href="#${r}" data-v="${r}"><span class="cd">${c}</span><span class="lb">${esc(l)}</span>${m?`<span class="mini" id="mini-${m.id}"></span>`:"<span></span>"}</a>`}).join("")}</div>`).join("")+`<div class="side-foot" id="side-foot">—</div>`;
+}
+function buildModuleViews(){
+  $("#mod-views").innerHTML=MODULES.map(m=>`<section class="view" id="view-${m.route}" data-title="${esc(m.title)}" data-group="${m.group}" hidden>
+    <div class="hud vh"><div class="vh-l"><span class="bigcode">${m.code}</span><div><div class="eyebrow">${m.group} · Module</div><h2>${esc(m.title)}</h2><p>${esc(m.purpose)}</p></div></div>
+    <div class="vh-r"><div class="pbar" id="pb-${m.id}"></div><div class="pcount" id="pc-${m.id}"></div>${m.actions?`<div class="vh-acts" id="act-${m.id}"></div>`:""}</div></div>
+    <div class="cells" id="cells-${m.id}"><div class="cell"><span class="k">Scanning…</span></div></div></section>`).join("");
+  MODULES.forEach(m=>m.actions&&m.actions.forEach(a=>{const b=document.createElement("button");b.type="button";b.className="ib sm "+(a.cls||"");b.textContent=a.label;b.addEventListener("click",()=>a.fn(b));$("#act-"+m.id).appendChild(b)}));
+}
+let CUR="overview";
+function route(){
+  let r=(location.hash||"").slice(1);if(!document.getElementById("view-"+r))r="overview";
+  if(r!==CUR||!document.querySelector(".view:not([hidden])")){
+    document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!=="view-"+r);
+    const v=document.getElementById("view-"+r);
+    $("#crumb").innerHTML=`${esc(v.dataset.group==="EDITH"?"EDITH":v.dataset.group)} / <b>${esc(v.dataset.title)}</b>`;
+    if(CUR!==r)scrollTo({top:0,behavior:"instant"in document.documentElement.style?"instant":"auto"});
+    CUR=r;document.body.dataset.view=r;
+  }
+  document.querySelectorAll(".nv").forEach(a=>a.dataset.v===r?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));
+  const act=document.querySelector(`.nv[data-v="${r}"]`);if(act&&innerWidth<=900)act.scrollIntoView({inline:"center",block:"nearest"});
+  if(r==="pencil")dispatchEvent(new Event("edith:pad"));
+}
+addEventListener("hashchange",route);
+
+/* ---------------- render ---------------- */
+const RESULTS={};
+const TL={D:"DIR",E:"EST",R:"RST"};
+function cellHTML(r){
+  const wide=r.long||r.ext;
+  const ext=r.ext?`<details class="ext"><summary>Show all ${r.ext.length}</summary><div>${r.ext.map(esc).join(" · ")}</div></details>`:"";
+  const v=r.t==="R"?"NOT EXPOSED":r.v;
+  return `<div class="cell${wide?" wide":""}" data-t="${r.t}"><div class="ck"><span class="k">${esc(r.k)}</span><i class="t ${r.t}">${TL[r.t]}</i></div><div class="v${r.long?" long":""}"${r.id?` id="${r.id}"`:""}>${esc(v)}</div>${r.n?`<div class="n">${esc(r.n)}</div>`:""}${ext}</div>`;
+}
+const barHTML=c=>{const t=c.D+c.E+c.R||1;return["D","E","R"].filter(k=>c[k]).map(k=>`<i class="${k}" style="flex:${c[k]/t}"></i>`).join("")};
+const cnt=rows=>{const c={D:0,E:0,R:0};rows.forEach(r=>c[r.t]++);return c};
+async function renderModule(id){
+  const m=MODULES.find(x=>x.id===id);let rows;
+  try{rows=await m.collect()}catch(e){rows=[RS("Module error",e.message)];log(`${m.title}: ${e.message}`,"e")}
+  RESULTS[id]=rows;const c=cnt(rows);
+  $("#cells-"+id).innerHTML=rows.map(cellHTML).join("");
+  $("#pb-"+id).innerHTML=barHTML(c);
+  $("#pc-"+id).innerHTML=`<span class="D"><b>${c.D}</b> direct</span><span class="E"><b>${c.E}</b> estimate</span><span class="R"><b>${c.R}</b> restricted</span>`;
+  const mini=document.getElementById("mini-"+id);if(mini)mini.innerHTML=barHTML(c);
+  updateSummary();return rows;
+}
+function renderCaps(){
+  CAPRES=CAPS.map(([n,f])=>{let ok=false;try{ok=!!f()}catch(e){}return[n,ok]});
+  const yes=CAPRES.filter(c=>c[1]).length,no=CAPRES.length-yes;
+  $("#caps").innerHTML=CAPRES.map(([n,ok])=>`<div class="cap ${ok?"y":"n"}" title="${ok?"Present":"Absent"}"><i></i><span>${esc(n)}</span></div>`).join("");
+  $("#cap-bar").innerHTML=`<i class="D" style="flex:${yes}"></i><i class="R" style="flex:${no}"></i>`;
+  $("#cap-count").innerHTML=`<span class="D"><b>${yes}</b> present</span><span class="R"><b>${no}</b> absent</span><span>${CAPRES.length} checked</span>`;
+}
+const find=(id,k)=>(RESULTS[id]||[]).find(r=>r.k===k);
+let CORE={D:0,E:0,R:0};
+function updateSummary(){
+  const c={D:0,E:0,R:0};Object.values(RESULTS).forEach(rs=>rs.forEach(r=>c[r.t]++));CORE=c;
+  const all=c.D+c.E+c.R;$("#n-all").textContent=all;$("#n-D").textContent=c.D;$("#n-E").textContent=c.E;$("#n-R").textContent=c.R;
+  const pct=all?Math.round((c.D+c.E)/all*100):0;$("#c-pct").textContent=pct+"%";$("#c-sub").textContent=`${c.D+c.E} of ${all} readings`;
+  const g=probeGL();const gpu=(g.ur||g.renderer||"").replace(/^ANGLE \(|\)$/g,"");
+  const bits=[`<em>${IPAD?"iPad":"This device"}</em>`];
+  if(BROWSER.ver)bits.push(`${esc(BROWSER.name)} ${esc(BROWSER.ver.split(".").slice(0,2).join("."))}`);
+  if(navigator.hardwareConcurrency)bits.push(`${navigator.hardwareConcurrency} cores`);
+  if(gpu)bits.push(esc(gpu.length>28?gpu.slice(0,28)+"…":gpu));
+  $("#headline").innerHTML=bits.join(" · ");
+  $("#eyebrow").textContent=`Device profile · scanned ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
+  const spec=(l,r,fallback)=>{const t=r?r.t:"R";const v=r&&r.t!=="R"?r.v:(fallback??"Not exposed");return `<div class="spec"><div class="sl"><span>${l}</span><i class="${t}"></i></div><div class="sv" title="${esc(v)}">${esc(v)}</div></div>`};
+  $("#specs").innerHTML=[
+    spec("Device",find("id","Device class")),spec("Browser",find("os","Browser version")?{...find("os","Browser version"),v:`${BROWSER.name} ${BROWSER.ver||""}`}:null),
+    spec("Cores",find("cpu","Logical processors")),spec("GPU",find("gpu","Unmasked renderer")||find("gpu","Renderer")),
+    spec("Panel",find("dsp","Panel pixels")),spec("Gamut",find("dsp","Color gamut")),
+    spec("Refresh",LIVE.hz?{t:"E",v:LIVE.hz+" Hz"}:null,"measuring…"),spec("Site quota",find("sto","Site quota")),
+  ].join("");
+  $("#matrix").innerHTML=MODULES.map(m=>{const rs=RESULTS[m.id];if(!rs)return"";const c=cnt(rs);
+    return `<a class="hud mt" href="#${m.route}"><div class="mh"><span class="code">${m.code}</span><span class="ms"><span class="D">${c.D}</span><span class="E">${c.E}</span><span class="R">${c.R}</span></span></div><div class="mn">${esc(m.title)}</div><div class="mini">${barHTML(c)}</div></a>`}).join("");
+  const locked=[];Object.values(RESULTS).forEach(rs=>rs.forEach(r=>{if(r.t==="R"&&!locked.includes(r.k))locked.push(r.k)}));
+  $("#locked").innerHTML=locked.map(k=>`<span class="lk">${LOCK}${esc(k)}</span>`).join("");
+  const sf=$("#side-foot");if(sf)sf.innerHTML=`${all} READINGS<br>${pct}% READABLE · ${c.R} LOCKED`;
+  ticker();
+}
+function ticker(){
+  const all=CORE.D+CORE.E+CORE.R;if(!all)return;
+  $("#ticker").innerHTML=`SYS <b class="ok">NOMINAL</b> · RDG <b>${all}</b> · READABLE <b>${Math.round((CORE.D+CORE.E)/all*100)}%</b> · REFRESH <b>${LIVE.hz??"—"} Hz</b> · LAG <b>${LIVE.lag!=null?LIVE.lag.toFixed(1):"—"} ms</b>${LIVE.rtt?` · RTT <b>${LIVE.rtt.toFixed(0)} ms</b>`:""}`;
+}
+setInterval(()=>{if(Object.keys(RESULTS).length){ticker();if(CUR==="overview")updateSpecRefresh()}},1000);
+function updateSpecRefresh(){const sv=document.querySelectorAll("#specs .spec .sv")[6];if(sv&&LIVE.hz){sv.textContent=LIVE.hz+" Hz";sv.previousElementSibling.querySelector("i").className="E"}}
+
+/* core ring */
+(()=>{const cv=$("#core"),ctx=cv.getContext("2d");const W=cv.width,C=W/2;let a=0;const still=mq("(prefers-reduced-motion: reduce)");
+  function draw(){
+    if(CUR!=="overview"&&!still){requestAnimationFrame(draw);return}
+    ctx.clearRect(0,0,W,W);
+    ctx.save();ctx.translate(C,C);ctx.rotate(a);
+    for(let i=0;i<120;i++){const ang=i/120*Math.PI*2;const long=i%10===0;ctx.strokeStyle=long?"rgba(134,176,236,.85)":"rgba(134,176,236,.25)";ctx.lineWidth=long?3:1.5;
+      ctx.beginPath();ctx.moveTo(Math.cos(ang)*(C-6),Math.sin(ang)*(C-6));ctx.lineTo(Math.cos(ang)*(C-(long?26:16)),Math.sin(ang)*(C-(long?26:16)));ctx.stroke()}
+    ctx.restore();
+    const tot=CORE.D+CORE.E+CORE.R;const r=C-56;ctx.lineWidth=24;
+    ctx.strokeStyle="rgba(130,172,233,.10)";ctx.beginPath();ctx.arc(C,C,r,0,Math.PI*2);ctx.stroke();
+    if(tot){let s=-Math.PI/2;[["D","#43938F"],["E","#F6C24A"],["R","#DA3832"]].forEach(([k,col])=>{const sw=CORE[k]/tot*Math.PI*2;if(sw>0){ctx.strokeStyle=col;ctx.beginPath();ctx.arc(C,C,r,s+0.014,s+sw-0.014);ctx.stroke()}s+=sw})}
+    ctx.save();ctx.translate(C,C);ctx.rotate(-a*1.8);ctx.strokeStyle="rgba(48,111,199,.9)";ctx.lineWidth=3;
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(0,0,C-92,i*2.094,i*2.094+1.2);ctx.stroke()}
+    ctx.restore();
+    const gr=ctx.createRadialGradient(C,C,0,C,C,C-96);gr.addColorStop(0,"rgba(48,111,199,.3)");gr.addColorStop(1,"rgba(48,111,199,0)");ctx.fillStyle=gr;ctx.beginPath();ctx.arc(C,C,C-96,0,7);ctx.fill();
+    a+=0.0035;if(!still)requestAnimationFrame(draw)}
+  draw();if(still)setInterval(draw,1000)})();
+
+/* filters */
+document.querySelectorAll(".fc[data-f]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".fc[data-f]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  const f=b.dataset.f;if(f==="all")delete document.body.dataset.filter;else document.body.dataset.filter=f;
+  try{sessionStorage.setItem("edith.filter",f)}catch(e){}
+}));
+
+/* scan */
+async function rescan(quiet,onStep){
+  renderCaps();
+  await Promise.all(MODULES.map(m=>renderModule(m.id).then(rs=>onStep&&onStep(m,rs))));
+  if(!quiet)log(`Scan complete: ${CORE.D} direct, ${CORE.E} estimated, ${CORE.R} restricted`,"s");
+}
+
+/* ---------------- motion lab ---------------- */
+let SNS={on:false,got:false,last:0,accS:[]};
+function setSns(msg,cls){const s=$("#sns-status");s.textContent=msg;s.className="status"+(cls?" "+cls:"")}
+const f2=v=>v==null?"—":(v>=0?"+":"")+v.toFixed(2);
+function onMotion(e){
+  SNS.got=true;const a=e.accelerationIncludingGravity||{},b=e.acceleration||{},r=e.rotationRate||{};const src=(b.x!=null)?b:a;
+  $("#ax").textContent=f2(src.x);$("#ay").textContent=f2(src.y);$("#az").textContent=f2(src.z);
+  $("#rr").textContent=r.alpha!=null?`${r.alpha.toFixed(0)}/${r.beta.toFixed(0)}/${r.gamma.toFixed(0)}°/s`:"—";
+  if(e.interval)$("#si").textContent=`${Math.round(1000/(e.interval>1?e.interval:e.interval*1000))} Hz`;
+  const now=performance.now();if(now-SNS.last>200){push(SNS.accS,Math.hypot(src.x||0,src.y||0,src.z||0),120);spark($("#s-acc"),SNS.accS,"#F6C24A",{min:0,n:120});SNS.last=now}
+}
+function onOrient(e){
+  SNS.got=true;
+  $("#oa").textContent=e.alpha!=null?e.alpha.toFixed(1)+"°":"—";$("#ob").textContent=e.beta!=null?e.beta.toFixed(1)+"°":"—";$("#og").textContent=e.gamma!=null?e.gamma.toFixed(1)+"°":"—";
+  if(e.webkitCompassHeading!=null)$("#hd").textContent=e.webkitCompassHeading.toFixed(0)+"°";else if(e.absolute&&e.alpha!=null)$("#hd").textContent=(360-e.alpha).toFixed(0)+"°";
+  if(e.beta!=null){$("#slab").style.transform=`rotateX(${Math.max(-80,Math.min(80,e.beta))}deg) rotateY(${Math.max(-80,Math.min(80,e.gamma||0))}deg)`;
+    const x=Math.max(-1,Math.min(1,(e.gamma||0)/45)),y=Math.max(-1,Math.min(1,(e.beta||0)/45));$("#bubble").style.transform=`translate(${x*80}px,${y*80}px)`}
+}
+$("#btn-sns").addEventListener("click",async()=>{
+  const btn=$("#btn-sns");
+  if(SNS.on){removeEventListener("devicemotion",onMotion);removeEventListener("deviceorientation",onOrient);SNS.on=false;btn.textContent="Start sensors";setSns("Sensors stopped.");log("Motion sensors stopped");return}
+  if(!("DeviceMotionEvent" in window)){setSns("This browser has no motion sensor API.","bad");log("Motion API absent","e");return}
+  try{
+    if(typeof DeviceMotionEvent.requestPermission==="function"){const p=await DeviceMotionEvent.requestPermission();if(p!=="granted"){setSns("Motion permission was declined. Allow Motion & Orientation for this site in Safari settings, then try again.","bad");log("Motion permission declined","w");return}}
+    if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){try{await DeviceOrientationEvent.requestPermission()}catch(e){}}
+  }catch(e){setSns(`Permission request was blocked here. ${FRAMED?"Embedded viewers cannot ask for motion access. Open the standalone file in Safari.":""}`,"bad");log("Motion permission blocked: "+(e.message||e.name),"e");return}
+  addEventListener("devicemotion",onMotion);addEventListener("deviceorientation",onOrient);SNS.on=true;SNS.got=false;btn.textContent="Stop sensors";
+  setSns("Listening for sensor events…");log("Motion sensors started");
+  setTimeout(()=>{if(SNS.on&&!SNS.got){setSns(FRAMED?"No readings arrived. This embedded view blocks motion events. Open the standalone file in Safari to use them.":"No readings arrived. This device may have no motion sensors, or the browser is withholding them.","bad");log("No motion events received","w")}
+    else if(SNS.got){setSns("Live. Tilt the iPad to move the attitude slab and level bubble.","ok");log("Motion events streaming","s")}},2500);
+});
+
+/* ---------------- pencil lab ---------------- */
+(()=>{
+  const cv=$("#pad"),ctx=cv.getContext("2d");let dpr=1;
+  const active=new Map();let maxN=0,rate=[],seenPen=false,seenTouch=false;
+  function size(){const r=cv.getBoundingClientRect();if(!r.width)return;dpr=devicePixelRatio||1;const W=Math.round(r.width*dpr),H=Math.round(r.height*dpr);if(W===cv.width&&H===cv.height)return;
+    let img=null;try{if(cv.width&&cv.height)img=ctx.getImageData(0,0,cv.width,cv.height)}catch(e){}
+    cv.width=W;cv.height=H;ctx.lineCap="round";ctx.lineJoin="round";if(img)try{ctx.putImageData(img,0,0)}catch(e){}}
+  new ResizeObserver(size).observe(cv);addEventListener("edith:pad",()=>requestAnimationFrame(size));
+  const col={pen:"#F6C24A",touch:"#86B0EC",mouse:"#66BAB4"};
+  function readout(e){
+    $("#p-type").textContent=e.pointerType==="pen"?"Apple Pencil":e.pointerType==="touch"?"Finger":e.pointerType==="mouse"?"Mouse / trackpad":e.pointerType||"—";
+    $("#p-pr").textContent=e.pressure!=null?e.pressure.toFixed(3):"—";$("#p-tilt").textContent=`${e.tiltX??0}° / ${e.tiltY??0}°`;
+    $("#p-alt").textContent=e.altitudeAngle!=null?`${(e.altitudeAngle*57.2958).toFixed(0)}° / ${(e.azimuthAngle*57.2958).toFixed(0)}°`:"Not reported";
+    $("#p-sz").textContent=`${(e.width||0).toFixed(1)} × ${(e.height||0).toFixed(1)} pt`;
+  }
+  function pt(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*dpr,(e.clientY-r.top)*dpr]}
+  cv.addEventListener("pointerdown",e=>{e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}$("#pad-hint").hidden=true;
+    active.set(e.pointerId,{p:pt(e)});maxN=Math.max(maxN,active.size);$("#p-n").textContent=active.size;$("#p-max").textContent=maxN;readout(e);
+    if(e.pointerType==="pen"&&!seenPen){seenPen=true;log("Apple Pencil / stylus input detected","s")}
+    if(e.pointerType==="touch"&&!seenTouch){seenTouch=true;log("Touch input detected")}});
+  cv.addEventListener("pointermove",e=>{
+    const a=active.get(e.pointerId);
+    if(!a){if(e.pointerType==="pen"){$("#p-hov").textContent="Hovering";readout(e)}return}
+    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];const now=performance.now();
+    for(const ev of evs){const p=pt(ev);const pr=ev.pressure||0.5;
+      const w=ev.pointerType==="pen"?(0.8+pr*7):ev.pointerType==="touch"?Math.max(2,(ev.width||8)*0.35):2.5;
+      ctx.strokeStyle=col[ev.pointerType]||"#E9F0FA";ctx.globalAlpha=ev.pointerType==="pen"?0.55+pr*0.45:0.9;ctx.lineWidth=w*dpr;
+      ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=6*dpr;
+      ctx.beginPath();ctx.moveTo(a.p[0],a.p[1]);ctx.lineTo(p[0],p[1]);ctx.stroke();a.p=p;rate.push(now)}
+    ctx.globalAlpha=1;ctx.shadowBlur=0;
+    while(rate.length&&now-rate[0]>1000)rate.shift();$("#p-hz").textContent=rate.length+" Hz";readout(e)});
+  const end=e=>{active.delete(e.pointerId);$("#p-n").textContent=active.size;if(!active.size)setTimeout(()=>{if(!active.size){rate=[];$("#p-hz").textContent="—"}},600)};
+  cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
+  cv.addEventListener("pointerleave",e=>{if(e.pointerType==="pen"&&!active.size)$("#p-hov").textContent="Not hovering"});
+  $("#btn-clear").addEventListener("click",()=>{ctx.clearRect(0,0,cv.width,cv.height);$("#pad-hint").hidden=false;maxN=0;$("#p-max").textContent="0"});
+})();
+
+/* ---------------- benchmark ---------------- */
+let SINK=0;const state={bench:null};
+function timed(fn,budget=420){let ops=0,n=0;const t0=performance.now();while(performance.now()-t0<budget){ops+=fn(n++)}return ops/((performance.now()-t0)/1000)}
+async function timedAsync(fn,budget=600){let ops=0,n=0;const t0=performance.now();while(performance.now()-t0<budget){ops+=await fn(n++)}return ops/((performance.now()-t0)/1000)}
+const WORKER_SRC=`onmessage=e=>{const end=performance.now()+e.data;let ops=0,x=12345|0;while(performance.now()<end){for(let i=0;i<200000;i++){x^=x<<13;x^=x>>>17;x^=x<<5}ops+=600000}postMessage([ops,x])}`;
+async function workerRun(n,ms=700){
+  const url=URL.createObjectURL(new Blob([WORKER_SRC],{type:"text/javascript"}));const ws=Array.from({length:n},()=>new Worker(url));const t0=performance.now();
+  const res=await Promise.all(ws.map(w=>new Promise((ok,bad)=>{w.onmessage=e=>ok(e.data[0]);w.onerror=bad;w.postMessage(ms)})));
+  const dt=(performance.now()-t0)/1000;ws.forEach(w=>w.terminate());URL.revokeObjectURL(url);return res.reduce((a,b)=>a+b,0)/dt;
+}
+const BENCH=[
+ {id:"int",name:"Integer ALU",unit:"M ops/s",run:async()=>timed(n=>{let x=(n+1)|0;for(let i=0;i<200000;i++){x^=x<<13;x^=x>>>17;x^=x<<5}SINK^=x;return 600000})/1e6},
+ {id:"flt",name:"Floating-point math",unit:"M ops/s",run:async()=>timed(()=>{let s=0;for(let i=1;i<100000;i++){s+=Math.sqrt(i)*Math.sin(i*0.001)+Math.log(i)}SINK+=s;return 300000})/1e6},
+ {id:"mem",name:"Memory bandwidth",unit:"GB/s",run:async()=>{const a=new Float64Array(1<<20),b=new Float64Array(1<<20);for(let i=0;i<a.length;i++)a[i]=i;return timed(()=>{b.set(a);let s=0;for(let i=0;i<b.length;i+=8)s+=b[i];SINK+=s;return a.byteLength*2+b.byteLength/8})/1e9}},
+ {id:"sort",name:"Typed-array sort",unit:"M items/s",run:async()=>{const src=new Float64Array(100000);for(let i=0;i<src.length;i++)src[i]=Math.random();const w=new Float64Array(src.length);return timed(()=>{w.set(src);w.sort();SINK+=w[0];return w.length})/1e6}},
+ {id:"json",name:"JSON round-trip",unit:"MB/s",run:async()=>{const o=Array.from({length:2000},(_,i)=>({id:i,name:"item"+i,tags:["a","b","c"],v:i*1.5,ok:i%2===0}));const len=JSON.stringify(o).length;return timed(()=>{SINK+=JSON.parse(JSON.stringify(o)).length;return len})/1e6}},
+ {id:"sha",name:"SHA-256 (Web Crypto)",unit:"MB/s",run:async()=>{if(!crypto?.subtle)return null;const buf=new Uint8Array(4<<20);crypto.getRandomValues(buf.subarray(0,65536));return await timedAsync(async()=>{const h=await crypto.subtle.digest("SHA-256",buf);SINK+=new Uint8Array(h)[0];return buf.byteLength})/1e6}},
+ {id:"c2d",name:"Canvas 2D drawing",unit:"K shapes/s",run:async()=>{const c=document.createElement("canvas");c.width=c.height=512;const x=c.getContext("2d");return timed(n=>{for(let i=0;i<500;i++){x.fillStyle=`hsl(${(i*7+n)%360} 70% 50%)`;x.beginPath();x.arc((i*37)%512,(i*91)%512,6+i%12,0,6.283);x.fill()}x.getImageData(0,0,1,1);return 500})/1e3}},
+ {id:"mt1",name:"Worker · single thread",unit:"M ops/s",run:async()=>typeof Worker==="function"?(await workerRun(1))/1e6:null},
+ {id:"mtn",name:"Worker · all threads",unit:"M ops/s",run:async()=>typeof Worker==="function"?(await workerRun(Math.min(16,navigator.hardwareConcurrency||4)))/1e6:null},
+];
+function benchHist(){return LS.get("edith.bench")||LS.get("jarvis4.bench")||[]}
+function renderBench(cur){
+  const hist=benchHist();const show=cur||hist[hist.length-1];const prev=hist.filter(h=>!show||h.t!==show.t).slice(-1)[0];
+  const best={};hist.forEach(h=>BENCH.forEach(b=>{const v=h.r[b.id];if(v!=null)best[b.id]=Math.max(best[b.id]||0,v)}));
+  if(cur)BENCH.forEach(b=>{const v=cur.r[b.id];if(v!=null)best[b.id]=Math.max(best[b.id]||0,v)});
+  const fmt=x=>x==null?"—":x>=100?x.toFixed(0):x>=10?x.toFixed(1):x.toFixed(2);
+  $("#bench-body").innerHTML=BENCH.map(b=>{const v=show?.r[b.id],p=prev?.r[b.id];const d=v!=null&&p?((v-p)/p*100):null;const pct=v!=null&&best[b.id]?v/best[b.id]*100:0;
+    return `<tr><td>${esc(b.name)}</td><td class="num">${fmt(v)}<span class="unit">${b.unit}</span></td><td class="num">${fmt(p)}</td><td class="num delta ${d==null?"":d>=0?"up":"down"}">${d==null?"—":(d>=0?"+":"")+d.toFixed(1)+"%"}</td><td><div class="bar-c"><i style="width:${pct.toFixed(1)}%"></i></div></td></tr>`}).join("");
+  if(show&&!cur)$("#bench-status").textContent=`Last run ${new Date(show.t).toLocaleString()}${show.r.mt1&&show.r.mtn?` · multi-thread scaling ${(show.r.mtn/show.r.mt1).toFixed(2)}×`:""}. ${hist.length} run${hist.length>1?"s":""} stored on this iPad.`;
+}
+$("#btn-bench").addEventListener("click",async()=>{
+  const btn=$("#btn-bench");btn.disabled=true;btn.textContent="Running…";let hidden=false;const vh=()=>{if(document.hidden)hidden=true};document.addEventListener("visibilitychange",vh);
+  log("Benchmark suite started");const r={};
+  for(let i=0;i<BENCH.length;i++){const b=BENCH[i];$("#bench-status").textContent=`Running ${b.name}…`;$("#bench-status").className="status";$("#bench-prog").style.width=(i/BENCH.length*100)+"%";await sleep(40);
+    try{r[b.id]=await b.run()}catch(e){r[b.id]=null;log(`${b.name} failed: ${e.message}`,"w")}}
+  $("#bench-prog").style.width="100%";document.removeEventListener("visibilitychange",vh);
+  const run={t:new Date().toISOString(),r,valid:!hidden,ua};
+  if(!hidden){const h=benchHist();h.push(run);while(h.length>10)h.shift();LS.set("edith.bench",h)}
+  state.bench=run;renderBench(run);
+  const sc=r.mt1&&r.mtn?(r.mtn/r.mt1):null;
+  $("#bench-status").textContent=hidden?"The page was hidden during the run, so these results are invalid and were not stored.":`Done${sc?` · multi-thread scaling ${sc.toFixed(2)}× across ${Math.min(16,navigator.hardwareConcurrency||4)} workers`:""}. Results stored on this iPad for comparison.`;
+  $("#bench-status").className="status "+(hidden?"bad":"ok");
+  log(hidden?"Benchmark invalid: page was hidden":`Benchmark done: integer ${r.int?.toFixed(0)} M ops/s, SHA-256 ${r.sha?.toFixed(0)} MB/s`,hidden?"w":"s");
+  btn.disabled=false;btn.textContent="Run again";setTimeout(()=>$("#bench-prog").style.width="0",800);
+});
+
+/* ---------------- export / brief ---------------- */
+let DL=null;if(window.claude?.use){window.claude.use("downloads").then(d=>{DL=d}).catch(()=>{})}
+function report(){
+  return{report:"E.D.I.T.H. device report",system:"Embedded Device Intelligence & Telemetry Hub",generated:new Date().toISOString(),framed:FRAMED,
+    summary:{direct:CORE.D,estimate:CORE.E,restricted:CORE.R},live:{refreshHz:LIVE.hz,mainThreadLagMs:LIVE.lag,networkRttMs:LIVE.rtt},
+    modules:MODULES.map(m=>({code:m.code,title:m.title,readings:(RESULTS[m.id]||[]).map(r=>({label:r.k,value:r.id==="v-hz"&&LIVE.hz?LIVE.hz+" Hz":r.v,source:({D:"direct",E:"estimate",R:"restricted"})[r.t],note:r.n||undefined}))})),
+    capabilities:Object.fromEntries(CAPRES),benchmark:state.bench||benchHist().slice(-1)[0]||null,log:LOG.slice(-80)};
+}
+$("#btn-export").addEventListener("click",async()=>{
+  const data=JSON.stringify(report(),null,2);const name=`edith-report-${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.json`;
+  if(DL){try{await DL.save({filename:name,data});log("Report saved: "+name,"s");toast("Report saved");return}catch(e){if(e?.code==="declined"){toast("Save cancelled");return}log("Save unavailable here: "+(e?.code||e),"w")}}
+  if(!window.claude){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove();log("Report downloaded: "+name,"s");toast("Report downloaded");return}
+  try{await navigator.clipboard.writeText(data);toast("Report copied to clipboard");log("Report copied to clipboard","s")}catch(e){toast("Export is not available in this view");log("Export unavailable","e")}
+});
+$("#btn-brief").addEventListener("click",()=>{
+  if(!("speechSynthesis" in window)){toast("Speech is not available here");return}
+  speechSynthesis.cancel();const g=probeGL();const st=find("sto","Site quota");
+  const txt=`EDITH online. ${IPAD?"This is an iPad":"This device is"} running ${BROWSER.name} ${BROWSER.ver?BROWSER.ver.split(".")[0]:""}, with ${navigator.hardwareConcurrency||"an unknown number of"} logical processors and ${g.ur||g.renderer||"unidentified"} graphics. The display is ${screen.width} by ${screen.height} points at ${devicePixelRatio} times density${LIVE.hz?`, refreshing at about ${LIVE.hz} hertz`:""}. ${navigator.onLine?"The network is online":"The network is offline"}${LIVE.rtt?`, with a median round trip of ${Math.round(LIVE.rtt)} milliseconds`:""}. I can read ${CORE.D+CORE.E} items. ${CORE.R} are locked by the platform, and I have not guessed any of them.${st&&st.t!=="R"?` This site may store up to ${st.v}.`:""}`;
+  const u=new SpeechSynthesisUtterance(txt);u.rate=1.02;u.pitch=1.05;
+  const vs=VOICES||speechSynthesis.getVoices();const v=vs.find(v=>/en-GB/.test(v.lang)&&/female|samantha|kate|serena|martha/i.test(v.name))||vs.find(v=>/en-GB/.test(v.lang))||vs.find(v=>/^en/.test(v.lang));if(v)u.voice=v;
+  u.onerror=()=>toast("Speech was blocked in this view");speechSynthesis.speak(u);log("Spoken briefing started");
+});
+if("speechSynthesis" in window)speechSynthesis.addEventListener?.("voiceschanged",()=>{VOICES=speechSynthesis.getVoices();renderModule("med")});
+$("#btn-refresh").addEventListener("click",async()=>{$("#btn-refresh").disabled=true;log("Rescan requested");GL=null;MEDIA_DEC=null;await rescan();$("#btn-refresh").disabled=false;toast("Rescan complete")});
+
+/* ---------------- boot ---------------- */
+buildNav();buildModuleViews();route();
+if(FRAMED)$("#frame-notice").hidden=false;
+try{const f=sessionStorage.getItem("edith.filter");if(f){const b=document.querySelector(`.fc[data-f="${f}"]`);b&&b.click()}}catch(e){}
+log(`E.D.I.T.H. online · ${FRAMED?"embedded view":"top-level page"} · ${window.isSecureContext?"secure context":"insecure context"}`);
+renderBench(null);
+let showBoot=!mq("(prefers-reduced-motion: reduce)");try{if(sessionStorage.getItem("edith.booted"))showBoot=false;sessionStorage.setItem("edith.booted","1")}catch(e){}
+const boot=$("#boot");let done=0;const t0=performance.now();
+const dismiss=()=>{boot.classList.add("gone");setTimeout(()=>boot.hidden=true,500)};
+if(showBoot){boot.hidden=false;boot.addEventListener("click",dismiss);setTimeout(dismiss,3000);
+  const bl=$("#boot-log");const line=(h)=>{const d=document.createElement("div");d.innerHTML=h;bl.appendChild(d)};
+  line(`<span class="k">&gt;</span> initialising telemetry hub`);
+  rescan(false,(m,rs)=>{done++;const c=cnt(rs);$("#boot-bar").style.width=(done/MODULES.length*100)+"%";line(`<span class="k">&gt; ${m.code.padEnd(3," ")}</span> ${esc(m.title.toLowerCase())} <span class="ok">ok</span> · ${rs.length} readings${c.R?` · ${c.R} locked`:""}`)})
+   .then(()=>{line(`<span class="ok">&gt; all systems nominal</span>`);setTimeout(dismiss,Math.max(350,1100-(performance.now()-t0)))});
+}else rescan();
+})();
+</script>
+
+</body>
+</html>
